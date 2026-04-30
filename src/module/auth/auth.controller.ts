@@ -72,7 +72,7 @@ export const refreshCustomer = async (req: Request, res: Response) => {
     );
   };
 
-    res.cookie("refreshToken", refreshToken, {
+  res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
@@ -94,7 +94,7 @@ export const logoutCustomer = async (req: Request, res: Response) => {
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
   });
-  
+
   ApiResponse.ok(res, "user logged out successfully");
 };
 
@@ -108,15 +108,15 @@ export const profile = async (req: Request, res: Response) => {
 
 export const forgotPassword = async (req: Request, res: Response) => {
   await forgotPasswordService(req.body);
-  
+
   ApiResponse.ok(res, "Token send to user's mail successfully")
 };
 
 export const newPassword = async (req: Request<{ token: string }, {}, { newPassword: string, confirmPassword: string }>, res: Response) => {
   const { token }: { token: string } = req.params;
   const { newPassword, confirmPassword } = req.body;
-  
+
   await newPasswordService({ token, newPassword, confirmPassword });
-  
+
   ApiResponse.ok(res, "password changed successfully");
 };

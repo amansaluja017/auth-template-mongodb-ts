@@ -1,6 +1,6 @@
 import "dotenv/config";
 import {createServer} from "node:http";
-import createApp from "./app.js";
+import createApp from "./app.ts";
 
 import ApiError from "./common/utils/api-error.ts";
 import connectToDb from "./common/config/db.ts";
