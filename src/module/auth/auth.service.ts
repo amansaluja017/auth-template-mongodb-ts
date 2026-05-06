@@ -14,7 +14,7 @@ function hashedToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 };
 
-export const registerService = async ({ name, email, password, role }: { name: string; email: string; password: string; role: string}) => {
+export const registerService = async ({ name, email, password: pass, role }: { name: string; email: string; password: string; role: string}) => {
   const existedUser = await User.findOne({ email });
 
   if (existedUser) throw ApiError.existedUser();
@@ -24,7 +24,7 @@ export const registerService = async ({ name, email, password, role }: { name: s
   const user = await User.create({
     name,
     email,
-    password,
+    password: pass,
     role,
     verificationToken: hashedToken,
     verificationTokenExpires: new Date(Date.now() + 15 * 60 * 1000)
@@ -35,23 +35,22 @@ export const registerService = async ({ name, email, password, role }: { name: s
   };
 
   const userObject = user.toObject();
-  delete userObject.refreshToken;
-  delete userObject.verificationToken;
-  delete userObject.verificationTokenExpires;
+
+  const {password, refreshToken, verificationToken, verificationTokenExpires, ...rest} = userObject
 
   sendEmail(email, "Verify Your Account", verificationMail(name, `${process.env.FRONTEND_URL}/verify-email?token=${rawToken}`))
     .then(() => console.log("Verification email sent")).catch((error) => console.error("Error sending verification email:", error));
 
-  return userObject;
+  return rest;
 };
 
-export const loginService = async ({ email, password }: { email: string; password: string }) => {
+export const loginService = async ({ email, password: pass }: { email: string; password: string }) => {
   const user = await User.findOne({ email }).select("+password");
 
   if (!user) throw ApiError.userNotFound();
   if (!user.isVerified) throw ApiError.forbidden();
 
-  const isPasswordMatch = await user.comparePassword(password);
+  const isPasswordMatch = await user.comparePassword(pass);
 
   if (!isPasswordMatch)
     throw ApiError.unauthorized(
@@ -59,15 +58,16 @@ export const loginService = async ({ email, password }: { email: string; passwor
     );
 
   const accessToken = generateAccessToken({ id: user._id.toString(), role: user.role });
-  const refreshToken = generateRefreshToken({ id: user._id.toString() });
+  const newRefreshToken = generateRefreshToken({ id: user._id.toString() });
 
-  user.refreshToken = hashedToken(refreshToken);
+  user.refreshToken = hashedToken(newRefreshToken);
   await user.save({ validateBeforeSave: false });
 
   const userObject = user.toObject();
-  delete userObject.refreshToken;
 
-  return { user: userObject, accessToken, refreshToken };
+  const {password, refreshToken, ...rest} = userObject;
+
+  return { user: rest, accessToken, refreshToken: newRefreshToken };
 };
 
 export const verifyEmailService = async (token: string) => {

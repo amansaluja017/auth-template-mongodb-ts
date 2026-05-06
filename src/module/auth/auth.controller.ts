@@ -22,6 +22,8 @@ export const registerCustomer = async (req: Request, res: Response) => {
 };
 
 export const loginCustomer = async (req: Request, res: Response) => {
+  if (req.cookies.refreshToken) throw ApiError.badRequest("You are already login with this account");
+
   const response = await loginService(req.body);
 
   if (!response) {
@@ -83,11 +85,8 @@ export const refreshCustomer = async (req: Request, res: Response) => {
 };
 
 export const logoutCustomer = async (req: Request, res: Response) => {
-  if (!req.user) {
-    throw ApiError.unauthorized("You are not authorized");
-  };
 
-  await logoutService(req.user);
+  await logoutService(req.user!);
 
   res.clearCookie("refreshToken", {
     httpOnly: true,
@@ -99,9 +98,6 @@ export const logoutCustomer = async (req: Request, res: Response) => {
 };
 
 export const profile = async (req: Request, res: Response) => {
-  if (!req.user) {
-    throw ApiError.unauthorized("You are not authorized");
-  };
 
   ApiResponse.ok(res, "user profile", req.user);
 };
